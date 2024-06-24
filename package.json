@@ -1,0 +1,11 @@
+{
+  "name": "web3-side-project",
+  "scripts": {
+    "compile": "tsc --build",
+    "watch": "tsc --build --watch",
+    "clean": "rm -rf **/dist **/**/*.d.ts **/*.tsbuildinfo"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2"
+  }
+}

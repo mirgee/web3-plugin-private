@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "./dist"
+  },
+  "references": [
+    { "path": "./private-transaction" },
+    { "path": "./web3-plugin-private" }
+  ],
+  "files": [],
+  "exclude": []
+}

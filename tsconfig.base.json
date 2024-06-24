@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+    "composite": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "paths": {
+      "private-transaction": ["./private-transaction/src/index"],
+      "web3-plugin-private": ["./web3-plugin-private/src/index"]
+    }
+  }
+}
