@@ -13,17 +13,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const EventEmitter = require("events");
+const EventEmitter = require('events');
 
 const Protocol = {
-  HTTP: "HTTP",
-  WEBSOCKET: "WebSocket",
+  HTTP: 'HTTP',
+  WEBSOCKET: 'WebSocket'
 };
 
 const Event = {
-  CONNECTED: "connected",
-  DATA: "data",
-  ERROR: "error",
+  CONNECTED: 'connected',
+  DATA: 'data',
+  ERROR: 'error'
 };
 
 class SubscriptionManager {
@@ -43,10 +43,7 @@ class PollingSubscription extends SubscriptionManager {
   }
 
   async subscribe(privacyGroupId, filter) {
-    this.subscription.filterId = await this.web3.priv.newFilter(
-      privacyGroupId,
-      filter
-    );
+    this.subscription.filterId = await this.web3.priv.newFilter(privacyGroupId, filter);
     await this.pollForLogs(privacyGroupId, this.subscription.filterId);
   }
 
@@ -57,10 +54,7 @@ class PollingSubscription extends SubscriptionManager {
   async pollForLogs(privacyGroupId, filterId) {
     const fetchLogs = async () => {
       try {
-        const logs = await this.web3.priv.getFilterChanges(
-          privacyGroupId,
-          filterId
-        );
+        const logs = await this.web3.priv.getFilterChanges(privacyGroupId, filterId);
         logs.forEach((log) => {
           this.subscription.emit(Event.DATA, log);
         });
@@ -99,24 +93,20 @@ class PubSubSubscription extends SubscriptionManager {
   async subscribe(privacyGroupId, filter) {
     const websocketProvider = this.web3.currentProvider;
 
-    websocketProvider.on("connect", () => {
-      console.log("CONNECTED");
+    websocketProvider.on('connect', () => {
+      console.log('CONNECTED');
       this.subscription.emit(Event.CONNECTED);
     });
 
-    websocketProvider.on("data", (data) => {
+    websocketProvider.on('data', (data) => {
       this.subscription.emit(Event.DATA, data.params);
     });
 
-    websocketProvider.on("error", (error) => {
+    websocketProvider.on('error', (error) => {
       this.subscription.emit(Event.ERROR, error);
     });
 
-    this.subscription.filterId = await this.web3.priv.subscribe(
-      privacyGroupId,
-      "logs",
-      filter
-    );
+    this.subscription.filterId = await this.web3.priv.subscribe(privacyGroupId, 'logs', filter);
   }
 
   async getPastLogs() {
@@ -125,10 +115,7 @@ class PubSubSubscription extends SubscriptionManager {
 
   async unsubscribe(privacyGroupId, filterId, callback) {
     try {
-      const result = await this.web3.priv.unsubscribe(
-        privacyGroupId,
-        filterId
-      );
+      const result = await this.web3.priv.unsubscribe(privacyGroupId, filterId);
       this.subscription.reset();
       if (callback) callback(null, result);
       return result;
@@ -149,19 +136,14 @@ class PrivateSubscription extends EventEmitter {
     this.getPast = false;
 
     const providerType = web3.currentProvider.constructor.name;
-    if (providerType === "HttpProvider") {
+    if (providerType === 'HttpProvider') {
       this.protocol = Protocol.HTTP;
-      this.manager = new PollingSubscription(
-        this,
-        this.web3.priv.subscriptionPollingInterval
-      );
-    } else if (providerType === "WebsocketProvider") {
+      this.manager = new PollingSubscription(this, this.web3.priv.subscriptionPollingInterval);
+    } else if (providerType === 'WebsocketProvider') {
       this.protocol = Protocol.WEBSOCKET;
       this.manager = new PubSubSubscription(this);
     } else {
-      throw new Error(
-        "Current protocol does not support subscriptions. Use HTTP or WebSockets."
-      );
+      throw new Error('Current protocol does not support subscriptions. Use HTTP or WebSockets.');
     }
   }
 
@@ -171,7 +153,7 @@ class PrivateSubscription extends EventEmitter {
     }
     await this.manager.subscribe(this.privacyGroupId, this.filter);
     if (this.filterId == null) {
-      throw new Error("Failed to set filter ID");
+      throw new Error('Failed to set filter ID');
     }
     return this.filterId;
   }
@@ -181,10 +163,7 @@ class PrivateSubscription extends EventEmitter {
 
     if (this.getPast && eventName === Event.DATA) {
       (async () => {
-        const pastLogs = await this.manager.getPastLogs(
-          this.privacyGroupId,
-          this.filterId
-        );
+        const pastLogs = await this.manager.getPastLogs(this.privacyGroupId, this.filterId);
         pastLogs.forEach((log) => {
           this.emit(Event.DATA, log);
         });
@@ -204,5 +183,5 @@ class PrivateSubscription extends EventEmitter {
 }
 
 module.exports = {
-  PrivateSubscription,
+  PrivateSubscription
 };
