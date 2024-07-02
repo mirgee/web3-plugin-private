@@ -10,10 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.2",
+    "private-transactions": "../private-transaction",
     "rlp": "^3.0.0",
     "ts-jest": "^29.1.5",
     "web3": "^4.10.0",
-    "web3-eth-accounts": "^4.1.2"
+    "web3-eth-accounts": "^4.1.2",
+    "web3-utils": "^4.3.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.7",

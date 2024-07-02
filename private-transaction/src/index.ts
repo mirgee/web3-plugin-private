@@ -326,4 +326,8 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
 
     return this.fromValuesArray(values as PrivateTxValuesArray, opts);
   }
+
+	public static fromTxData(txData: PrivateTxData, opts: TxOptions = {}) {
+		return new PrivateTransaction(txData, opts);
+	}
 }
