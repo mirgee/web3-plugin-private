@@ -2,12 +2,16 @@ import {
   AccessListEIP2930ValuesArray,
   BaseTransaction,
   bigIntToUnpaddedUint8Array,
+  Capability,
+  Common,
+  ecrecover,
   FeeMarketEIP1559ValuesArray,
   JsonTx,
   toUint8Array,
   TxOptions,
   TxValuesArray,
-  uint8ArrayToBigInt
+  uint8ArrayToBigInt,
+  unpadUint8Array
 } from 'web3-eth-accounts';
 import { RLP } from '@ethereumjs/rlp';
 import { Base64String, PrivateTxData, PrivateTxValuesArray, Restriction } from './types';
@@ -16,6 +20,14 @@ import { validateNoLeadingZeroes } from 'web3-validator';
 import { stringToHex } from 'web3-utils';
 import { hexToBytes, bytesToUtf8 } from 'ethereum-cryptography/utils';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './utils';
+import { keccak256 } from 'ethereum-cryptography/keccak';
+import { Numbers } from 'web3-types';
+
+function meetsEIP155(_v: bigint, chainId: bigint) {
+  const v = Number(_v);
+  const chainIdDoubled = Number(chainId) * 2;
+  return v === chainIdDoubled + 35 || v === chainIdDoubled + 36;
+}
 
 export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   public readonly gasPrice: bigint;
@@ -23,6 +35,46 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   public readonly privateFor: Base64String[];
   public readonly privacyGroupId: Base64String;
   public readonly restriction: Restriction;
+
+  // public readonly common: Common;
+
+  /**
+   * Validates tx's `v` value
+   */
+  private _validateTxV(_v?: bigint, common?: Common): Common {
+    let chainIdBigInt: Numbers;
+    const v = _v !== undefined ? Number(_v) : undefined;
+    // Check for valid v values in the scope of a signed legacy tx
+    if (v !== undefined) {
+      // v is 1. not matching the EIP-155 chainId included case and...
+      // v is 2. not matching the classic v=27 or v=28 case
+      if (v < 37 && v !== 27 && v !== 28) {
+        throw new Error(`Legacy txs need either v = 27/28 or v >= 37 (EIP-155 replay protection), got v = ${v}`);
+      }
+    }
+
+    // No unsigned tx and EIP-155 activated and chain ID included
+    if (v !== undefined && v !== 0 && (!common || common.gteHardfork('spuriousDragon')) && v !== 27 && v !== 28) {
+      if (common) {
+        if (!meetsEIP155(BigInt(v), common.chainId())) {
+          throw new Error(
+            `Incompatible EIP155-based V ${v} and chain id ${common.chainId()}. See the Common parameter of the Transaction constructor to set the chain id.`
+          );
+        }
+      } else {
+        // Derive the original chain ID
+        let numSub: number;
+        if ((v - 35) % 2 === 0) {
+          numSub = 35;
+        } else {
+          numSub = 36;
+        }
+        // Use derived chain ID to create a proper Common
+        chainIdBigInt = BigInt(v - numSub) / BigInt(2);
+      }
+    }
+    return this._getCommon(common, chainIdBigInt);
+  }
 
   /**
    * This constructor takes the values, validates them, assigns them and freezes the object.
@@ -34,7 +86,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   public constructor(txData: PrivateTxData, opts: TxOptions = {}) {
     super({ ...txData /* type: TRANSACTION_TYPE */ }, opts);
 
-    // this.common = this._validateTxV(this.v, opts.common);
+    (this as any).common = this._validateTxV(this.v, opts.common);
 
     this.gasPrice = uint8ArrayToBigInt(toUint8Array(txData.gasPrice === '' ? '0x' : txData.gasPrice));
     this.privateFrom = uint8ArrayToBase64(txData.privateFrom);
@@ -52,6 +104,23 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     }
     this._validateCannotExceedMaxInteger({ gasPrice: this.gasPrice });
     BaseTransaction._validateNotArray(txData);
+
+    if (this.common.gteHardfork('spuriousDragon')) {
+      if (!this.isSigned()) {
+        this.activeCapabilities.push(Capability.EIP155ReplayProtection);
+      } else {
+        // EIP155 spec:
+        // If block.number >= 2,675,000 and v = CHAIN_ID * 2 + 35 or v = CHAIN_ID * 2 + 36
+        // then when computing the hash of a transaction for purposes of signing or recovering
+        // instead of hashing only the first six elements (i.e. nonce, gasprice, startgas, to, value, data)
+        // hash nine elements, with v replaced by CHAIN_ID, r = 0 and s = 0.
+        // v and chain ID meet EIP-155 conditions
+        // eslint-disable-next-line no-lonely-if
+        if (meetsEIP155(this.v!, this.common.chainId())) {
+          this.activeCapabilities.push(Capability.EIP155ReplayProtection);
+        }
+      }
+    }
 
     const freeze = opts?.freeze ?? true;
     if (freeze) {
@@ -86,10 +155,41 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     return RLP.encode(this.raw());
   }
 
+  private _getMessageToSign() {
+    const values: (Uint8Array | Uint8Array[])[] = [
+      bigIntToUnpaddedUint8Array(this.nonce),
+      bigIntToUnpaddedUint8Array(this.gasPrice),
+      bigIntToUnpaddedUint8Array(this.gasLimit),
+      this.to !== undefined ? this.to.buf : Uint8Array.from([]),
+      bigIntToUnpaddedUint8Array(this.value),
+      this.data
+    ];
+
+    if (this.supports(Capability.EIP155ReplayProtection)) {
+      values.push(toUint8Array(this.common.chainId()));
+      values.push(unpadUint8Array(toUint8Array(0)));
+      values.push(unpadUint8Array(toUint8Array(0)));
+      values.push(unpadUint8Array(base64ToUint8Array(this.privateFrom)));
+      if (this.privateFor.length > 0) {
+        values.push(this.privateFor.map(base64ToUint8Array).map(unpadUint8Array));
+      }
+      if (this.privacyGroupId) {
+        values.push(unpadUint8Array(base64ToUint8Array(this.privacyGroupId)));
+      }
+      values.push(unpadUint8Array(hexToBytes(stringToHex(this.restriction))));
+    }
+
+    return values;
+  }
+
   getMessageToSign(hashMessage: false): Uint8Array | Uint8Array[];
   getMessageToSign(hashMessage?: true): Uint8Array;
   getMessageToSign(hashMessage?: unknown): Uint8Array | Uint8Array[] {
-    throw new Error('Method not implemented.');
+    const message = this._getMessageToSign();
+    if (hashMessage) {
+      return keccak256(RLP.encode(message));
+    }
+    return message as Uint8Array[]; // TODO: This is just to silence typescript
   }
 
   hash(): Uint8Array {
@@ -97,19 +197,67 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   }
 
   getMessageToVerifySignature(): Uint8Array {
-    throw new Error('Method not implemented.');
+    if (!this.isSigned()) {
+      const msg = this._errorMsg('This transaction is not signed');
+      throw new Error(msg);
+    }
+    const message = this._getMessageToSign();
+    return keccak256(RLP.encode(message));
   }
 
   getSenderPublicKey(): Uint8Array {
-    throw new Error('Method not implemented.');
+		const msgHash = this.getMessageToVerifySignature();
+
+		const { v, r, s } = this;
+
+		this._validateHighS();
+
+		try {
+			return ecrecover(
+				msgHash,
+				v!,
+				bigIntToUnpaddedUint8Array(r!),
+				bigIntToUnpaddedUint8Array(s!),
+				this.supports(Capability.EIP155ReplayProtection)
+					? this.common.chainId()
+					: undefined,
+			);
+		} catch (e: any) {
+			const msg = this._errorMsg('Invalid Signature');
+			throw new Error(msg);
+		}
   }
 
   toJSON(): JsonTx {
     throw new Error('Method not implemented.');
   }
 
-  protected _processSignature(v: bigint, r: Uint8Array, s: Uint8Array): PrivateTransaction {
-    throw new Error('Method not implemented.');
+  protected _processSignature(_v: bigint, r: Uint8Array, s: Uint8Array): PrivateTransaction {
+    let v = _v;
+    if (this.supports(Capability.EIP155ReplayProtection)) {
+      v += this.common.chainId() * BigInt(2) + BigInt(8);
+    }
+
+    const opts = { ...this.txOptions, common: this.common };
+
+    return PrivateTransaction.fromTxData(
+      {
+        nonce: this.nonce,
+        gasPrice: this.gasPrice,
+        gasLimit: this.gasLimit,
+        to: this.to,
+        value: this.value,
+        data: this.data,
+        v,
+        r: uint8ArrayToBigInt(r),
+        s: uint8ArrayToBigInt(s),
+        privateFor: this.privateFor,
+        privateFrom: this.privateFrom,
+        privacyGroupId: this.privacyGroupId,
+        restriction: this.restriction
+      },
+      opts
+    );
   }
 
   errorStr(): string {
