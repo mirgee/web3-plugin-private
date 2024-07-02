@@ -1,4 +1,4 @@
-import { Common } from 'web3-eth-accounts';
+import { Common, TxValuesArray } from 'web3-eth-accounts';
 import { Address } from './address';
 import { HexString, Numbers, Uint } from 'web3-types';
 
@@ -59,7 +59,7 @@ export type PrivateTxValuesArray = [
   Uint8Array | null, // r
   Uint8Array | null, // s
   Uint8Array, // privateFrom
-  Base64String | null, // privacyGroupId
-  Restriction | null, // restriction
-  ...Uint8Array[] // privateFor
+  Uint8Array[] | null, // privateFor
+  Uint8Array | null, // privacyGroupId
+  Uint8Array, // restriction
 ];

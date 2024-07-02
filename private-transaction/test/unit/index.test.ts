@@ -1,16 +1,24 @@
 import { toUint8Array, unpadUint8Array } from 'web3-eth-accounts';
 import { PrivateTransaction } from '../../src/index';
-import { bytesToHex, utf8ToBytes } from 'web3-utils';
+import { bytesToHex, uint8ArrayEquals, utf8ToBytes } from 'web3-utils';
 import txFixtures from './fixtures/txs.json';
 import { base64ToUint8Array } from '../../src/utils';
+import { hexToBytes } from 'ethereum-cryptography/utils';
+import { PrivateTxValuesArray } from '../../src/types';
 
 describe('[Transaction]: Basic functions', () => {
   const transactions: PrivateTransaction[] = [];
 
   it('decode with fromValuesArray()', () => {
     for (const tx of txFixtures.slice(0, 4)) {
-      const txData = tx.raw.map(toUint8Array);
-      const pt = PrivateTransaction.fromValuesArray(txData);
+      const txData = tx.raw.map((hexStringOrArray: string | Array<string>) => {
+        if (typeof hexStringOrArray === 'string') {
+          return toUint8Array(hexStringOrArray)
+        } else {
+          return hexStringOrArray.map(toUint8Array)
+        }
+      });
+      const pt = PrivateTransaction.fromValuesArray(txData as PrivateTxValuesArray);
 
       expect(bytesToHex(unpadUint8Array(toUint8Array(pt.nonce)))).toEqual(tx.raw[0]);
       expect(bytesToHex(toUint8Array(pt.gasPrice))).toEqual(tx.raw[1]);
@@ -24,28 +32,27 @@ describe('[Transaction]: Basic functions', () => {
       expect(bytesToHex(toUint8Array(pt.r))).toEqual(tx.raw[7]);
       expect(bytesToHex(toUint8Array(pt.s))).toEqual(tx.raw[8]);
       expect(bytesToHex(base64ToUint8Array(pt.privateFrom))).toEqual(tx.raw[9]);
-      expect(bytesToHex(base64ToUint8Array(pt.privacyGroupId))).toEqual(tx.raw[10]);
-      expect(bytesToHex(utf8ToBytes(pt.restriction))).toEqual(tx.raw[11]);
       for (let i = 0; i < pt.privateFor.length; i++) {
-        expect(bytesToHex(base64ToUint8Array(pt.privateFor[i]))).toEqual(tx.raw[12 + i]);
+        expect(bytesToHex(base64ToUint8Array(pt.privateFor[i]))).toEqual(tx.raw[10][i]);
       }
+      expect(bytesToHex(utf8ToBytes(pt.restriction))).toEqual(tx.raw[11]);
 
       transactions.push(pt);
     }
   });
 
-  // it('should decode rlp', () => {
-  //   transactions.forEach((tx, i) => {
-  //     expect(transactions[i].serialize()).toEqual(new PrivateTransaction(txFixtures[i].rlp).serialize());
-  //   });
-  // });
-  //
-  // it('should serialize', () => {
-  //   transactions.forEach((tx, i) => {
-  //     expect(`0x${tx.serialize().toString()}`).toEqual(txFixtures[i].rlp);
-  //   });
-  // });
-  //
+  it('should decode rlp', () => {
+    transactions.forEach((tx, i) => {
+      expect(tx.serialize()).toEqual(PrivateTransaction.fromSerializedTx(hexToBytes(txFixtures[i].rlp)).serialize());
+    });
+  });
+
+  it('should serialize', () => {
+    transactions.forEach((tx, i) => {
+      uint8ArrayEquals(tx.serialize(), hexToBytes(txFixtures[i].rlp))
+    });
+  });
+
   // it('should sign tx', () => {
   //   transactions.forEach((tx, i) => {
   //     const privKey = Buffer.from(txFixtures[i].privateKey, 16);

@@ -10,7 +10,7 @@ import {
   uint8ArrayToBigInt
 } from 'web3-eth-accounts';
 import { RLP } from '@ethereumjs/rlp';
-import { Base64String, PrivateTxData, Restriction } from './types';
+import { Base64String, PrivateTxData, PrivateTxValuesArray, Restriction } from './types';
 import { MAX_INTEGER } from './constants';
 import { validateNoLeadingZeroes } from 'web3-validator';
 import { stringToHex } from 'web3-utils';
@@ -63,7 +63,8 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     return this.gasLimit * this.gasPrice + this.value;
   }
 
-  raw(): TxValuesArray | AccessListEIP2930ValuesArray | FeeMarketEIP1559ValuesArray {
+  // @ts-ignore: ignore type mismatch error
+  raw(): TxValuesArray | AccessListEIP2930ValuesArray | FeeMarketEIP1559ValuesArray | PrivateTxValuesArray {
     return [
       bigIntToUnpaddedUint8Array(this.nonce),
       bigIntToUnpaddedUint8Array(this.gasPrice),
@@ -75,9 +76,9 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
       this.r !== undefined ? bigIntToUnpaddedUint8Array(this.r) : Uint8Array.from([]),
       this.s !== undefined ? bigIntToUnpaddedUint8Array(this.s) : Uint8Array.from([]),
       this.privateFrom !== undefined ? base64ToUint8Array(this.privateFrom) : Uint8Array.from([]),
+      this.privateFor.map(base64ToUint8Array),
       this.privacyGroupId !== undefined ? base64ToUint8Array(this.privacyGroupId) : Uint8Array.from([]),
-      hexToBytes(stringToHex(this.restriction)),
-      ...this.privateFor.map(base64ToUint8Array)
+      this.restriction !== undefined ? hexToBytes(stringToHex(this.restriction)) : Uint8Array.from([])
     ];
   }
 
@@ -120,7 +121,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   }
 
   // TODO: We should have custom type for values
-  public static fromValuesArray(values: TxValuesArray, opts: TxOptions = {}) {
+  public static fromValuesArray(values: PrivateTxValuesArray, opts: TxOptions = {}) {
     // If length is not 6, it has length 9. If v/r/s are empty Uint8Array, it is still an unsigned transaction
     // This happens if you get the RLP data from `raw()`
     // if (values.length !== 6 && values.length !== 9) {
@@ -128,21 +129,11 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     // }
     // TODO: Validate exclusive private transaction arguments
 
-    const [
-      nonce,
-      gasPrice,
-      gasLimit,
-      to,
-      value,
-      data,
-      v,
-      r,
-      s,
-      privateFrom,
-      privacyGroupId,
-      restriction,
-      ...privateFor
-    ] = values;
+    const [nonce, gasPrice, gasLimit, to, value, data, v, r, s, privateFrom, privateForOrPrivacyGroupId, restriction] =
+      values;
+
+    const privateFor = Array.isArray(privateForOrPrivacyGroupId) ? privateForOrPrivacyGroupId : [];
+    const privacyGroupId = Array.isArray(privateForOrPrivacyGroupId) ? '' : privateForOrPrivacyGroupId;
 
     validateNoLeadingZeroes({
       nonce,
@@ -176,5 +167,15 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
       },
       opts
     );
+  }
+
+  public static fromSerializedTx(serialized: Uint8Array, opts: TxOptions = {}) {
+    const values = RLP.decode(serialized);
+
+    if (!Array.isArray(values)) {
+      throw new Error('Invalid serialized tx input. Must be array');
+    }
+
+    return this.fromValuesArray(values as PrivateTxValuesArray, opts);
   }
 }
