@@ -7,9 +7,13 @@
     "incremental": true,
     "declaration": true,
     "declarationMap": true,
+    "sourceMap": true,
+    "inlineSources": true,
     "noEmit": false,
     "baseUrl": ".",
     "outDir": "./dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "paths": {
       "private-transaction": ["./private-transaction/src/index"],
       "web3-plugin-private": ["./web3-plugin-private/src/index"]

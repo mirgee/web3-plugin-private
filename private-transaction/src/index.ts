@@ -94,7 +94,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     this.restriction = typeof txData.restriction === 'string' ? txData.restriction : bytesToUtf8(txData.restriction);
 
     this.privateFor = [];
-    for (const privateFor of txData.privateFor) {
+    for (const privateFor of txData.privateFor || []) {
       this.privateFor.push(uint8ArrayToBase64(privateFor));
     }
 
@@ -132,9 +132,8 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     return this.gasLimit * this.gasPrice + this.value;
   }
 
-  // @ts-ignore: ignore type mismatch error
-  raw(): TxValuesArray | AccessListEIP2930ValuesArray | FeeMarketEIP1559ValuesArray | PrivateTxValuesArray {
-    return [
+  raw(): TxValuesArray | AccessListEIP2930ValuesArray | FeeMarketEIP1559ValuesArray {
+    const values = [
       bigIntToUnpaddedUint8Array(this.nonce),
       bigIntToUnpaddedUint8Array(this.gasPrice),
       bigIntToUnpaddedUint8Array(this.gasLimit),
@@ -144,11 +143,21 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
       this.v !== undefined ? bigIntToUnpaddedUint8Array(this.v) : Uint8Array.from([]),
       this.r !== undefined ? bigIntToUnpaddedUint8Array(this.r) : Uint8Array.from([]),
       this.s !== undefined ? bigIntToUnpaddedUint8Array(this.s) : Uint8Array.from([]),
-      this.privateFrom !== undefined ? base64ToUint8Array(this.privateFrom) : Uint8Array.from([]),
-      this.privateFor.map(base64ToUint8Array),
-      this.privacyGroupId !== undefined ? base64ToUint8Array(this.privacyGroupId) : Uint8Array.from([]),
-      this.restriction !== undefined ? hexToBytes(stringToHex(this.restriction)) : Uint8Array.from([])
+      this.privateFrom !== undefined ? base64ToUint8Array(this.privateFrom) : Uint8Array.from([])
     ];
+
+    if (this.privateFor && this.privateFor.length > 0) {
+      // @ts-expect-error
+      values.push(this.privateFor.map(base64ToUint8Array));
+    }
+
+    if (this.privacyGroupId !== undefined) {
+      values.push(base64ToUint8Array(this.privacyGroupId));
+    }
+
+    values.push(hexToBytes(stringToHex(this.restriction)));
+
+    return values;
   }
 
   serialize(): Uint8Array {
@@ -189,7 +198,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     if (hashMessage) {
       return keccak256(RLP.encode(message));
     }
-    return message as Uint8Array[]; // TODO: This is just to silence typescript
+    return message as Uint8Array[]; // TODO: Change the return type
   }
 
   hash(): Uint8Array {
@@ -206,26 +215,24 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
   }
 
   getSenderPublicKey(): Uint8Array {
-		const msgHash = this.getMessageToVerifySignature();
+    const msgHash = this.getMessageToVerifySignature();
 
-		const { v, r, s } = this;
+    const { v, r, s } = this;
 
-		this._validateHighS();
+    this._validateHighS();
 
-		try {
-			return ecrecover(
-				msgHash,
-				v!,
-				bigIntToUnpaddedUint8Array(r!),
-				bigIntToUnpaddedUint8Array(s!),
-				this.supports(Capability.EIP155ReplayProtection)
-					? this.common.chainId()
-					: undefined,
-			);
-		} catch (e: any) {
-			const msg = this._errorMsg('Invalid Signature');
-			throw new Error(msg);
-		}
+    try {
+      return ecrecover(
+        msgHash,
+        v!,
+        bigIntToUnpaddedUint8Array(r!),
+        bigIntToUnpaddedUint8Array(s!),
+        this.supports(Capability.EIP155ReplayProtection) ? this.common.chainId() : undefined
+      );
+    } catch (e: any) {
+      const msg = this._errorMsg('Invalid Signature');
+      throw new Error(msg);
+    }
   }
 
   toJSON(): JsonTx {
@@ -327,7 +334,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
     return this.fromValuesArray(values as PrivateTxValuesArray, opts);
   }
 
-	public static fromTxData(txData: PrivateTxData, opts: TxOptions = {}) {
-		return new PrivateTransaction(txData, opts);
-	}
+  public static fromTxData(txData: PrivateTxData, opts: TxOptions = {}) {
+    return new PrivateTransaction(txData, opts);
+  }
 }
