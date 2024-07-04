@@ -1,5 +1,5 @@
 import { Web3 } from "web3";
-import { PrivPlugin } from "../src/index"
+import { PrivPlugin } from "../../src/index"
 
 describe('basic test', () => {
 

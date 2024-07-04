@@ -1,16 +1,11 @@
 import { Contract, Web3 } from 'web3';
 import { PrivPlugin } from '../../src/index';
-import { network, enclave } from './keys';
-
-import sleep from 'sleep-promise';
-
+import { network, enclave } from '../resources/keys';
 import fs from 'fs';
 import path from 'path';
-import { padToEven, stripHexPrefix, toUint8Array } from 'web3-eth-accounts';
-import { hexToBytes } from 'web3-utils';
 
-const artifact = fs.readFileSync(path.join(__dirname, './solidity/EventEmitter/EventEmitter.json'));
-const bytecode = fs.readFileSync(path.join(__dirname, './solidity/EventEmitter/EventEmitter.bin'));
+const artifact = fs.readFileSync(path.join(__dirname, '../resources/solidity/EventEmitter/EventEmitter.json'));
+const bytecode = fs.readFileSync(path.join(__dirname, '../resources/solidity/EventEmitter/EventEmitter.bin'));
 const { abi } = JSON.parse(artifact.toString()).output;
 
 describe('basic test', () => {

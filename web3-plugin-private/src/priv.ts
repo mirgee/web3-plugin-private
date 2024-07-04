@@ -4,6 +4,7 @@ import { PrivateTransaction } from 'private-transaction/dist';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Chain, Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
 import { waitForTransactionWithRetries } from './shared/util';
+// import { PrivateSubscription } from './private-subscription';
 
 export type LogsFilterOptions = {
   fromBlock?: number;
@@ -139,6 +140,12 @@ export class PrivPlugin extends Web3PluginBase {
     await waitForTransactionWithRetries(operation, txHash, retries, delay);
     return this.getTransactionReceipt(txHash);
   }
+
+
+  // public async subscribeWithPooling(privacyGroupId: string, filter) {
+  //   const sub = new PrivateSubscription(this, privacyGroupId, filter);
+  //   return await sub.subscribe();
+  // };
 }
 
 declare module 'web3' {
