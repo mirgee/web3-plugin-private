@@ -2,9 +2,9 @@ import Web3, { eth, FMT_BYTES, FMT_NUMBER, Web3Eth, Web3PluginBase } from 'web3'
 import { PrivateTransactionManager } from './private-transaction-manager';
 import { PrivateTransaction } from 'private-transaction/dist';
 import { bytesToHex, hexToBytes } from 'web3-utils';
-import { Chain, Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
+import { Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
 import { waitForTransactionWithRetries } from './shared/util';
-import { PrivateSubscription } from './private-subscription'
+import { PrivateSubscription } from './private-subscription';
 
 export type LogsFilterOptions = {
   fromBlock?: number;
