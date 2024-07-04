@@ -29,7 +29,7 @@ const Event = {
 class SubscriptionManager {
   constructor(subscription) {
     this.subscription = subscription;
-    this.web3 = subscription.web3;
+    this.web3Plugin = subscription.web3Plugin;
   }
 }
 
@@ -43,18 +43,18 @@ class PollingSubscription extends SubscriptionManager {
   }
 
   async subscribe(privacyGroupId, filter) {
-    this.subscription.filterId = await this.web3.priv.newFilter(privacyGroupId, filter);
+    this.subscription.filterId = await this.web3Plugin.newFilter(privacyGroupId, filter);
     await this.pollForLogs(privacyGroupId, this.subscription.filterId);
   }
 
   async getPastLogs(privacyGroupId, filterId) {
-    return this.web3.priv.getFilterLogs(privacyGroupId, filterId);
+    return this.web3Plugin.getFilterLogs(privacyGroupId, filterId);
   }
 
   async pollForLogs(privacyGroupId, filterId) {
     const fetchLogs = async () => {
       try {
-        const logs = await this.web3.priv.getFilterChanges(privacyGroupId, filterId);
+        const logs = await this.web3Plugin.getFilterChanges(privacyGroupId, filterId);
         logs.forEach((log) => {
           this.subscription.emit(Event.DATA, log);
         });
@@ -71,7 +71,7 @@ class PollingSubscription extends SubscriptionManager {
 
   async unsubscribe(privacyGroupId, filterId, callback) {
     try {
-      await this.web3.priv.uninstallFilter(privacyGroupId, filterId);
+      await this.web3Plugin.uninstallFilter(privacyGroupId, filterId);
       if (this.timeout != null) {
         clearTimeout(this.timeout);
       }
@@ -91,7 +91,7 @@ class PubSubSubscription extends SubscriptionManager {
   }
 
   async subscribe(privacyGroupId, filter) {
-    const websocketProvider = this.web3.currentProvider;
+    const websocketProvider = this.web3Plugin.currentProvider;
 
     websocketProvider.on('connect', () => {
       console.log('CONNECTED');
@@ -106,7 +106,7 @@ class PubSubSubscription extends SubscriptionManager {
       this.subscription.emit(Event.ERROR, error);
     });
 
-    this.subscription.filterId = await this.web3.priv.subscribe(privacyGroupId, 'logs', filter);
+    this.subscription.filterId = await this.web3Plugin.subscribe(privacyGroupId, 'logs', filter);
   }
 
   async getPastLogs() {
@@ -115,7 +115,7 @@ class PubSubSubscription extends SubscriptionManager {
 
   async unsubscribe(privacyGroupId, filterId, callback) {
     try {
-      const result = await this.web3.priv.unsubscribe(privacyGroupId, filterId);
+      const result = await this.web3Plugin.unsubscribe(privacyGroupId, filterId);
       this.subscription.reset();
       if (callback) callback(null, result);
       return result;
@@ -126,19 +126,19 @@ class PubSubSubscription extends SubscriptionManager {
   }
 }
 
-class PrivateSubscription extends EventEmitter {
-  constructor(web3, privacyGroupId, filter) {
+export class PrivateSubscription extends EventEmitter {
+  constructor(web3Plugin, privacyGroupId, filter) {
     super();
     this.privacyGroupId = privacyGroupId;
     this.filter = filter;
-    this.web3 = web3;
+    this.web3Plugin = web3Plugin;
     this.filterId = null;
     this.getPast = false;
 
-    const providerType = web3.currentProvider.constructor.name;
+    const providerType = web3Plugin.currentProvider.constructor.name;
     if (providerType === 'HttpProvider') {
       this.protocol = Protocol.HTTP;
-      this.manager = new PollingSubscription(this, this.web3.priv.subscriptionPollingInterval);
+      this.manager = new PollingSubscription(this, 5000);
     } else if (providerType === 'WebsocketProvider') {
       this.protocol = Protocol.WEBSOCKET;
       this.manager = new PubSubSubscription(this);
@@ -181,7 +181,3 @@ class PrivateSubscription extends EventEmitter {
     return this.manager.unsubscribe(this.privacyGroupId, this.filterId, callback);
   }
 }
-
-module.exports = {
-  PrivateSubscription
-};

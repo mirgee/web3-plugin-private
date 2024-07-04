@@ -4,7 +4,7 @@ import { PrivateTransaction } from 'private-transaction/dist';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Chain, Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
 import { waitForTransactionWithRetries } from './shared/util';
-// import { PrivateSubscription } from './private-subscription';
+import { PrivateSubscription } from './private-subscription'
 
 export type LogsFilterOptions = {
   fromBlock?: number;
@@ -89,6 +89,48 @@ export class PrivPlugin extends Web3PluginBase {
     });
   }
 
+  public async newFilter(privacyGroupId: string, filterOptions: object) {
+    return this.requestManager.send({
+      method: 'priv_newFilter',
+      params: [privacyGroupId, filterOptions]
+    });
+  }
+
+  public async uninstallFilter(privacyGroupId: string, filterOptions: object) {
+    return this.requestManager.send({
+      method: 'priv_uninstallFilter',
+      params: [privacyGroupId, filterOptions]
+    });
+  }
+
+  public async getFilterLogs(privacyGroupId: string, filterId: string) {
+    return this.requestManager.send({
+      method: 'priv_getFilterLogs',
+      params: [privacyGroupId, filterId]
+    });
+  }
+
+  public async getFilterChanges(privacyGroupId: string, filterId: string) {
+    return this.requestManager.send({
+      method: 'priv_getFilterChanges',
+      params: [privacyGroupId, filterId]
+    });
+  }
+
+  public async subscribe(privacyGroupId: string, filterId: string) {
+    return this.requestManager.send({
+      method: 'priv_subscribe',
+      params: [privacyGroupId, filterId]
+    });
+  }
+
+  public async unsubscribe(privacyGroupId: string, filterId: string) {
+    return this.requestManager.send({
+      method: 'priv_unsubscribe',
+      params: [privacyGroupId, filterId]
+    });
+  }
+
   public async getTransactionCount(address: string, privacyGroupId: string) {
     const result = await this.requestManager.send({
       method: 'priv_getTransactionCount',
@@ -141,11 +183,11 @@ export class PrivPlugin extends Web3PluginBase {
     return this.getTransactionReceipt(txHash);
   }
 
-
-  // public async subscribeWithPooling(privacyGroupId: string, filter) {
-  //   const sub = new PrivateSubscription(this, privacyGroupId, filter);
-  //   return await sub.subscribe();
-  // };
+  public async subscribeWithPooling(privacyGroupId: string, filter: object) {
+    const subscription = new PrivateSubscription(this, privacyGroupId, filter);
+    const filterId = await subscription.subscribe();
+    return { subscription, filterId }
+  };
 }
 
 declare module 'web3' {
