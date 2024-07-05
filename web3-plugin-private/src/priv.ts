@@ -3,19 +3,9 @@ import { PrivateTransactionManager } from './private-transaction-manager';
 import { PrivateTransaction } from 'private-transaction/dist';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
-import { waitForTransactionWithRetries } from './shared/util';
+import { waitForTransactionWithRetries } from './util';
 import { PrivateSubscription } from './private-subscription';
-
-export type LogsFilterOptions = {
-  fromBlock?: number;
-  toBlock?: number;
-  addresses?: string[];
-};
-
-export type CallOptions = {
-  to?: string;
-  data?: string;
-};
+import { CallOptions, FilterOptions } from './types';
 
 interface RawTransactionOptions {
   privateKey: string;
@@ -82,24 +72,24 @@ export class PrivPlugin extends Web3PluginBase {
     });
   }
 
-  public async getLogs(privacyGroupId: string, filterOptions?: LogsFilterOptions) {
+  public async getLogs(privacyGroupId: string, filterOptions?: FilterOptions) {
     return this.requestManager.send({
       method: 'priv_getLogs',
       params: [privacyGroupId, filterOptions]
     });
   }
 
-  public async newFilter(privacyGroupId: string, filterOptions: object) {
+  public async newFilter(privacyGroupId: string, filterOptions?: FilterOptions) {
     return this.requestManager.send({
       method: 'priv_newFilter',
       params: [privacyGroupId, filterOptions]
     });
   }
 
-  public async uninstallFilter(privacyGroupId: string, filterOptions: object) {
+  public async uninstallFilter(privacyGroupId: string, filterId: string) {
     return this.requestManager.send({
       method: 'priv_uninstallFilter',
-      params: [privacyGroupId, filterOptions]
+      params: [privacyGroupId, filterId]
     });
   }
 
@@ -117,17 +107,17 @@ export class PrivPlugin extends Web3PluginBase {
     });
   }
 
-  public async subscribe(privacyGroupId: string, filterId: string) {
+  public async subscribe(privacyGroupId: string, type: string, filterOptions: FilterOptions) {
     return this.requestManager.send({
       method: 'priv_subscribe',
-      params: [privacyGroupId, filterId]
+      params: [privacyGroupId, type, filterOptions]
     });
   }
 
-  public async unsubscribe(privacyGroupId: string, filterId: string) {
+  public async unsubscribe(privacyGroupId: string, subscriptionId: string) {
     return this.requestManager.send({
       method: 'priv_unsubscribe',
-      params: [privacyGroupId, filterId]
+      params: [privacyGroupId, subscriptionId]
     });
   }
 

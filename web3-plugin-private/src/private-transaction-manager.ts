@@ -1,20 +1,20 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { URL } from "url";
-import { hexToBase64, base64toHex } from "./shared/util";
+import { hexToBase64, base64toHex } from "./util";
 import { Web3PluginBase } from "web3";
 
-interface SendOptions {
+type SendOptions = {
   data: string;
   privateFrom: string;
   privateFor: string;
 }
 
-interface StoreRawOptions {
+type StoreRawOptions = {
   data: string;
   privateFrom: string;
 }
 
-interface TlsSettings {
+type TlsSettings = {
   key?: string;
   clcert?: string;
   cacert?: string;
