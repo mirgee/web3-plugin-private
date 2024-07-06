@@ -3,3 +3,5 @@
 **/**/*.d.ts*
 **/**/dist
 **/**/.session.vim
+**/**/logs
+**/**/*.lock
