@@ -3,7 +3,7 @@ import { PrivateTransactionManager } from './private-transaction-manager';
 import { PrivateTransaction } from 'private-transaction/dist';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
-import { waitForTransactionWithRetries } from './util';
+import { generatePrivacyGroup, waitForTransactionWithRetries } from './util';
 import { PrivateSubscription } from './private-subscription';
 import { CallOptions, FilterOptions } from './types';
 
@@ -12,7 +12,7 @@ interface RawTransactionOptions {
   privateFrom: string;
   privateFor?: string[];
   privacyGroupId?: string;
-  nonce?: string;
+  nonce?: bigint;
   to?: string;
   data: Uint8ArrayLike;
   restriction?: string;
@@ -129,21 +129,20 @@ export class PrivPlugin extends Web3PluginBase {
     return parseInt(result, 16);
   }
 
-  public async generateAndSendRawTransaction(options: RawTransactionOptions) {
+  private async genericSendRawTransaction(options: RawTransactionOptions, method: string) {
     if (options.privacyGroupId && options.privateFor) {
       throw Error('privacyGroupId and privateFor are mutually exclusive');
     }
     const chainId = await eth.getChainId(this, { number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.HEX });
 
+    const privacyGroupId =
+      options.privacyGroupId || generatePrivacyGroup(options);
     const privateKeyBuffer = Buffer.from(options.privateKey, 'hex');
     const tx: PrivateTransaction = PrivateTransaction.fromTxData(
       {
         nonce:
           options.nonce ||
-          (await this.getTransactionCount(
-            privateKeyToAddress(privateKeyBuffer).toString(),
-            options.privacyGroupId
-          )),
+          (await this.getTransactionCount(privateKeyToAddress(privateKeyBuffer).toString(), privacyGroupId)),
         gasPrice: options.gasPrice || 0,
         gasLimit: options.gasLimit || 3000000,
         to: options.to,
@@ -161,7 +160,21 @@ export class PrivPlugin extends Web3PluginBase {
 
     const signedTx = tx.sign(hexToBytes(options.privateKey));
 
-    return this.sendRawTransaction(bytesToHex(signedTx.serialize()));
+    if (method === 'eea_sendRawTransaction') {
+      return this.sendRawTransaction(bytesToHex(signedTx.serialize()));
+    } else if (method === 'priv_distributeRawTransaction') {
+      return this.distributeRawTransaction(bytesToHex(signedTx.serialize())) 
+    } else {
+      throw new Error(`Invalid method: ${method}`);
+    }
+  }
+
+  public async generateAndDistributeRawTransaction(options: RawTransactionOptions) {
+    return this.genericSendRawTransaction(options, 'priv_distributeRawTransaction');
+  }
+
+  public async generateAndSendRawTransaction(options: RawTransactionOptions) {
+    return this.genericSendRawTransaction(options, 'eea_sendRawTransaction');
   }
 
   public async waitForTransactionReceipt(txHash: string, retries = 300, delay = 1000) {
@@ -176,8 +189,8 @@ export class PrivPlugin extends Web3PluginBase {
   public async subscribeWithPooling(privacyGroupId: string, filter: object) {
     const subscription = new PrivateSubscription(this, privacyGroupId, filter);
     const filterId = await subscription.subscribe();
-    return { subscription, filterId }
-  };
+    return { subscription, filterId };
+  }
 }
 
 declare module 'web3' {

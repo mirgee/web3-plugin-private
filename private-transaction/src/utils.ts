@@ -114,14 +114,14 @@ export function base64ToUint8Array(base64: string | Uint8Array) {
 export function uint8ArrayToBase64(uint8array: string | Uint8Array): string {
   if (typeof uint8array === 'string') {
     return uint8array;
-  } else {
-    // Convert Uint8Array to a binary string
+  } else if (Array.isArray(uint8array)){
     const binaryString = Array.from(uint8array)
       .map((byte) => String.fromCharCode(byte))
       .join('');
 
-    // Encode the binary string to base64
     return btoa(binaryString);
+  } else {
+    throw new Error(`Unable to convert value of type ${typeof uint8array} to base64`);
   }
 }
 

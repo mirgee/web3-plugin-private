@@ -1,0 +1,15 @@
+# NOTICE
+
+This project incorporates code from the following open-source projects:
+
+## web3.js-quorum
+
+**Project Repository:** [https://github.com/ConsenSys/web3js-quorum](https://github.com/ConsenSys/web3js-quorum)
+
+**License:** Apache Licence v2.0
+
+## web3.js
+
+**Project Repository:** [https://github.com/web3/web3.js](https://github.com/web3/web3.js)
+
+**License:** GNU Lesser General Public Licence
