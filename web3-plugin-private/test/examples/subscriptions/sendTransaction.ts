@@ -9,7 +9,7 @@ const artifact = fs.readFileSync(path.join(__dirname, '../../resources/solidity/
 const { abi } = JSON.parse(artifact.toString()).output;
 
 async function run() {
-  const web3 = new Web3('http://127.0.0.1:20000');
+  const web3 = new Web3(network.node1.url);
   web3.registerPlugin(new PrivPlugin());
 
   const contract = new Contract(abi);

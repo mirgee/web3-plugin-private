@@ -1,9 +1,10 @@
 import { PrivPlugin } from '../../../src/index';
 import Web3 from 'web3';
 import params from './params.json';
+import { network } from '../../resources/keys';
 
 async function run() {
-  const web3 = new Web3('http://127.0.0.1:20000');
+  const web3 = new Web3(network.node1.url);
   web3.registerPlugin(new PrivPlugin());
 
   const { privacyGroupId, contractAddress: address, blockNumber } = params;

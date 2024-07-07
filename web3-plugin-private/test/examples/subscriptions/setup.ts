@@ -8,11 +8,11 @@ import path from 'path';
 const bytecode = fs.readFileSync(path.join(__dirname, '../../resources/solidity/EventEmitter/EventEmitter.bin'));
 
 async function run() {
-  const web3 = new Web3('http://127.0.0.1:20000');
+  const web3 = new Web3(network.node1.url);
   web3.registerPlugin(new PrivPlugin());
 
   const addresses = [enclave.node1.publicKey, enclave.node2.publicKey];
-  const privacyGroupId = await web3.priv.createPrivacyGroup(addresses);
+  const privacyGroupId = await web3.priv.createPrivacyGroup({ addresses });
   console.log('Created privacy group', privacyGroupId);
   const txHash = await web3.priv.generateAndSendRawTransaction({
     data: `0x${bytecode}`,

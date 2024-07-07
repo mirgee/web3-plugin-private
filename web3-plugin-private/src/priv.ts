@@ -7,7 +7,7 @@ import { generatePrivacyGroup, waitForTransactionWithRetries } from './util';
 import { PrivateSubscription } from './private-subscription';
 import { CallOptions, FilterOptions } from './types';
 
-interface RawTransactionOptions {
+type RawTransactionOptions = {
   privateKey: string;
   privateFrom: string;
   privateFor?: string[];
@@ -18,6 +18,12 @@ interface RawTransactionOptions {
   restriction?: string;
   gasPrice?: string;
   gasLimit?: string;
+}
+
+type CreatePrivacyGroupOptions = {
+  addresses: string[];
+  name?: string;
+  description?: string;
 }
 
 export class PrivPlugin extends Web3PluginBase {
@@ -37,10 +43,10 @@ export class PrivPlugin extends Web3PluginBase {
     });
   }
 
-  public async createPrivacyGroup(addresses: string[], name?: string, description?: string) {
+  public async createPrivacyGroup(options: CreatePrivacyGroupOptions) {
     return this.requestManager.send({
       method: 'priv_createPrivacyGroup',
-      params: [{ addresses, name, description }]
+      params: [options]
     });
   }
 
@@ -48,6 +54,13 @@ export class PrivPlugin extends Web3PluginBase {
     return this.requestManager.send({
       method: 'priv_findPrivacyGroup',
       params: [addresses]
+    });
+  }
+
+  public async deletePrivacyGroup(privacyGroupId: string) {
+    return this.requestManager.send({
+      method: 'priv_deletePrivacyGroup',
+      params: [privacyGroupId]
     });
   }
 
