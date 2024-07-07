@@ -2,7 +2,9 @@
   "name": "web3-plugin-private",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["./dist", "./src"],
   "scripts": {
     "compile": "tsc -b tsconfig.json",
     "test": "jest"
@@ -13,7 +15,7 @@
     "@ethereumjs/rlp": "^5.0.2",
     "axios": "^1.7.2",
     "ethereum-cryptography": "^2.2.0",
-    "private-transaction": "../private-transaction",
+    "web3-private-transaction": "^1.0.0",
     "web3": "^4.10.0",
     "web3-eth-accounts": "^4.1.2",
     "web3-utils": "^4.3.0"

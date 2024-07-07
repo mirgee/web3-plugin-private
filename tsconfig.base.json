@@ -16,7 +16,7 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "paths": {
-      "private-transaction": ["./private-transaction/src/index"],
+      "private-transaction": ["./web3-private-transaction/src/index"],
       "web3-plugin-private": ["./web3-plugin-private/src/index"]
     }
   }

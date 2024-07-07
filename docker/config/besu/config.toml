@@ -1,6 +1,3 @@
-privacy-flexible-groups-enabled=false
-
-
 genesis-file="/config/genesis.json"
 node-private-key-file="/opt/besu/keys/nodekey"
 logging="DEBUG"

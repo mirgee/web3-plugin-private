@@ -1,6 +1,6 @@
-import Web3, { eth, FMT_BYTES, FMT_NUMBER, Web3Eth, Web3PluginBase } from 'web3';
+import { eth, FMT_BYTES, FMT_NUMBER, Web3PluginBase } from 'web3';
 import { PrivateTransactionManager } from './private-transaction-manager';
-import { PrivateTransaction } from 'private-transaction/dist';
+import { PrivateTransaction } from 'web3-private-transaction';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';
 import { generatePrivacyGroup, waitForTransactionWithRetries } from './util';
