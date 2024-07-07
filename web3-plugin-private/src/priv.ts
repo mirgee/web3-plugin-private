@@ -142,6 +142,13 @@ export class PrivPlugin extends Web3PluginBase {
     return parseInt(result, 16);
   }
 
+  public async getPrivateTransaction(txHash: string) {
+    return this.requestManager.send({
+      method: 'priv_getPrivateTransaction',
+      params: [txHash]
+    });
+  }
+
   private async genericSendRawTransaction(options: RawTransactionOptions, method: string) {
     if (options.privacyGroupId && options.privateFor) {
       throw Error('privacyGroupId and privateFor are mutually exclusive');
@@ -163,7 +170,7 @@ export class PrivPlugin extends Web3PluginBase {
         data: options.data,
         privateFor: options.privateFor,
         privateFrom: options.privateFrom,
-        privacyGroupId: options.privacyGroupId,
+        privacyGroupId,
         restriction: options.restriction || 'restricted'
       },
       {

@@ -90,7 +90,7 @@ export class PrivateTransaction extends BaseTransaction<PrivateTransaction> {
 
     this.gasPrice = uint8ArrayToBigInt(toUint8Array(txData.gasPrice === '' ? '0x' : txData.gasPrice));
     this.privateFrom = uint8ArrayToBase64(txData.privateFrom);
-    this.privacyGroupId = this.privacyGroupId && uint8ArrayToBase64(txData.privacyGroupId) || undefined;
+    this.privacyGroupId = txData.privacyGroupId && uint8ArrayToBase64(txData.privacyGroupId) || undefined;
     this.restriction = typeof txData.restriction === 'string' ? txData.restriction : bytesToUtf8(txData.restriction);
 
     this.privateFor = [];
