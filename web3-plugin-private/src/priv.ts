@@ -1,5 +1,14 @@
+/**
+ * This file includes modified code from the `web3js-quorum` project,
+ * licenced under Apache 2.0 licence,
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * The original code can be found at:https://github.com/ConsenSys/web3js-quorum
+ * 
+ * Modifications made by Miroslav Kovar (miroslavkovar@protonmail.com).
+ */
 import { eth, FMT_BYTES, FMT_NUMBER, Web3PluginBase } from 'web3';
-import { PrivateTransactionManager } from './private-transaction-manager';
 import { PrivateTransaction } from 'web3-private-transaction';
 import { bytesToHex, hexToBytes } from 'web3-utils';
 import { Common, privateKeyToAddress, Uint8ArrayLike } from 'web3-eth-accounts';

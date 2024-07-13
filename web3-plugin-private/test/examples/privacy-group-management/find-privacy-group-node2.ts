@@ -1,3 +1,13 @@
+/**
+ * This file includes modified code from the `web3js-quorum` project,
+ * licenced under Apache 2.0 licence,
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * The original code can be found at:https://github.com/ConsenSys/web3js-quorum
+ * 
+ * Modifications made by Miroslav Kovar (miroslavkovar@protonmail.com).
+ */
 import Web3 from 'web3';
 import { PrivPlugin } from '../../../src';
 import { network, enclave } from '../../resources/keys.js';

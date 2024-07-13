@@ -1,3 +1,13 @@
+/**
+ * This file includes modified code from the `web3js-quorum` project,
+ * licenced under Apache 2.0 licence,
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * The original code can be found at:https://github.com/ConsenSys/web3js-quorum
+ * 
+ * Modifications made by Miroslav Kovar (miroslavkovar@protonmail.com).
+ */
 import createGroup from '../examples/privacy-group-management/create-privacy-group';
 import findGroup from '../examples/privacy-group-management/find-privacy-group';
 import deleteGroup from '../examples/privacy-group-management/delete-privacy-group';

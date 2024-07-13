@@ -4,11 +4,15 @@ This project incorporates code from the following open-source projects:
 
 ## web3.js-quorum
 
+The `web3-plugin-private` currently contains mostly code adapted from the `web3.js-quorum` project, converted to TypeScript. Thank you to Concensys and all the contributors!
+
 **Project Repository:** [https://github.com/ConsenSys/web3js-quorum](https://github.com/ConsenSys/web3js-quorum)
 
 **License:** Apache Licence v2.0
 
 **Authors:** Concensys
+
+**Project Website:** [https://consensys.github.io/web3js-quorum/latest/index.html](https://consensys.github.io/web3js-quorum/latest/index.html)
 
 ## web3.js
 
